@@ -1,5 +1,6 @@
 package net.slc.jgroph.infrastructure.container;
 
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -38,7 +39,7 @@ public class ContainerTest
     }
 
     @Test
-    public void cannotInstantiateClassWithNonPublicDefaultContructor()
+    public void cannotInstantiateClassWithNonPublicDefaultConstructor()
     {
         exception.expect(ContainerError.class);
         exception.expectMessage(
@@ -147,5 +148,18 @@ public class ContainerTest
     {
         final Container object = container.make(Container.class);
         assertSame(container, object);
+    }
+
+    @Test
+    public void mustUseNonNullClass()
+    {
+        final Service service = new Service(container);
+        final Object object = service.perform(getNonNullClass());
+        assertNotNull(object);
+    }
+
+    private Class<@NonNull ?> getNonNullClass()
+    {
+        return SimpleDouble.class;
     }
 }

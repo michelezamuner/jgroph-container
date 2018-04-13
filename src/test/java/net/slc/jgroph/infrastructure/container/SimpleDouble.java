@@ -6,7 +6,7 @@ class SimpleDouble
     {
     }
 
-    String getValue()
+    public String getValue()
     {
         return "SimpleDouble";
     }
