@@ -25,7 +25,7 @@ public class ContainerTest
     }
 
     @Test
-    public void instantiatesNoDependencies()
+    public void instantiatesClassWithNoDependencies()
     {
         final SimpleDouble object = container.make(SimpleDouble.class);
         assertNotNull(object);
@@ -69,7 +69,7 @@ public class ContainerTest
     }
 
     @Test
-    public void instantiatesSimpleDependenciesWithExplicitArgs()
+    public void instantiatesClassWithSimpleDependenciesWithExplicitArgs()
     {
         final SimpleDouble d1 = new SimpleDouble();
         final SimpleDouble d2 = new SimpleDouble();
@@ -81,7 +81,7 @@ public class ContainerTest
     }
 
     @Test
-    public void instantiatesSimpleDependencies()
+    public void instantiatesClassWithSimpleDependenciesWithImplicitArgs()
     {
         final SimpleDependenciesDouble object = container.make(SimpleDependenciesDouble.class);
         assertEquals("SimpleDouble", object.getD1().getValue());
@@ -89,7 +89,7 @@ public class ContainerTest
     }
 
     @Test
-    public void instantiatesComplexDependenciesWithExplicitArgs()
+    public void instantiatesClassWithComplexDependenciesWithExplicitArgs()
     {
         final SimpleDouble d11 = new SimpleDouble();
         final SimpleDouble d12 = new SimpleDouble();
@@ -107,7 +107,7 @@ public class ContainerTest
     }
 
     @Test
-    public void instantiateComplexDependenciesWithImplicitArgs()
+    public void instantiatesClassWithComplexDependenciesWithImplicitArgs()
     {
         final ComplexDependenciesDouble object = container.make(ComplexDependenciesDouble.class);
         assertEquals("SimpleDouble", object.getD1().getD1().getValue());
@@ -116,7 +116,7 @@ public class ContainerTest
     }
 
     @Test
-    public void returnBoundObjectWhenCalledWithClass()
+    public void instantiatesClassWithBoundObject()
     {
         final SimpleDouble bound = new SimpleDouble();
         container.bind(SimpleDouble.class, bound);
@@ -134,7 +134,7 @@ public class ContainerTest
     }
 
     @Test
-    public void instantiateInterfaceWithBoundObject()
+    public void instantiatesInterfaceWithBoundObject()
     {
         final InterfaceDouble bound = mock(InterfaceDouble.class);
         container.bind(InterfaceDouble.class, bound);
@@ -144,10 +144,22 @@ public class ContainerTest
     }
 
     @Test
-    public void instantiatingAppWillAlwaysProduceTheSameObject()
+    public void instantiatingContainerWillAlwaysProduceTheSameObject()
     {
         final Container object = container.make(Container.class);
         assertSame(container, object);
+    }
+
+    @Test
+    public void instantiatesClassFromCallback()
+    {
+        container.bind(ClassWithValue.class, (Callback)(Object ...args) -> {
+            final ClassWithValue object = new ClassWithValue();
+            object.setValue((String)args[0]);
+            return object;
+        });
+        final ClassWithValue object = container.make(ClassWithValue.class, "My Value");
+        assertSame("My Value", object.getValue());
     }
 
     @Test

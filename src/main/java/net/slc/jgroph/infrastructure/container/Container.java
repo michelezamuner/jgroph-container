@@ -10,7 +10,8 @@ import java.util.Optional;
 
 public class Container
 {
-    private final Map<Class<@NonNull ?>, Object> bound = new HashMap<>();
+    private final Map<Class<@NonNull ?>, Object> instances = new HashMap<>();
+    private final Map<Class<@NonNull ?>, Callback> callbacks = new HashMap<>();
 
     @SuppressWarnings("unchecked")
     public <@NonNull T> T make(final Class<@NonNull T> type, final Object... args)
@@ -19,8 +20,12 @@ public class Container
             return (T)this;
         }
 
-        if (bound.containsKey(type)) {
-            return (T)bound.get(type);
+        if (instances.containsKey(type)) {
+            return (T)instances.get(type);
+        }
+
+        if (callbacks.containsKey(type)) {
+            return (T)callbacks.get(type).call(args);
         }
 
         if (type.isInterface()) {
@@ -36,7 +41,12 @@ public class Container
 
     public <@NonNull T> void bind(final Class<@NonNull T> type, final @NonNull T instance)
     {
-        bound.put(type, instance);
+        instances.put(type, instance);
+    }
+
+    public <@NonNull T> void bind(final Class<@NonNull T> type, final Callback callback)
+    {
+        callbacks.put(type, callback);
     }
 
     @SuppressWarnings("unchecked")
