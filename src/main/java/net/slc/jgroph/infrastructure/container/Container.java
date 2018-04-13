@@ -10,10 +10,10 @@ import java.util.Optional;
 
 public class Container
 {
-    private final Map<Class, Object> bound = new HashMap<>();
+    private final Map<Class<@NonNull ?>, Object> bound = new HashMap<>();
 
     @SuppressWarnings("unchecked")
-    public <T> T make(final Class<T> type, final Object... args)
+    public <@NonNull T> T make(final Class<@NonNull T> type, final Object... args)
     {
         if (type == Container.class) {
             return (T)this;
@@ -40,7 +40,7 @@ public class Container
     }
 
     @SuppressWarnings("unchecked")
-    private <T> Constructor<T> getConstructor(final Class<T> type)
+    private <@NonNull T> Constructor<@NonNull T> getConstructor(final Class<@NonNull T> type)
     {
         final Constructor[] constructors = type.getConstructors();
 
@@ -49,7 +49,7 @@ public class Container
         }
 
         if (constructors.length == 1) {
-            return (Constructor<T>)constructors[0];
+            return (Constructor<@NonNull T>)constructors[0];
         }
 
         return getDefaultConstructor(type)
@@ -57,7 +57,7 @@ public class Container
     }
 
     @SuppressWarnings("unchecked")
-    private <T> T createInstance(final Constructor<T> constructor, final Object... args)
+    private <@NonNull T> T createInstance(final Constructor<@NonNull T> constructor, final Object... args)
             throws InstantiationException, IllegalAccessException, InvocationTargetException
     {
         final Class[] params = constructor.getParameterTypes();
@@ -82,7 +82,7 @@ public class Container
         return constructor.newInstance(args);
     }
 
-    private <T> Optional<Constructor<T>> getDefaultConstructor(final Class<T> type)
+    private <@NonNull T> Optional<Constructor<@NonNull T>> getDefaultConstructor(final Class<@NonNull T> type)
     {
         try {
             return Optional.ofNullable(type.getConstructor());
