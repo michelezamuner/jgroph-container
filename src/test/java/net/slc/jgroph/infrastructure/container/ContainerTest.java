@@ -1,15 +1,11 @@
 package net.slc.jgroph.infrastructure.container;
 
-import org.checkerframework.checker.nullness.qual.NonNull;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertSame;
-
+import static org.junit.Assert.*;
 import static org.mockito.Mockito.mock;
 
 @SuppressWarnings("initialization")
@@ -49,22 +45,59 @@ public class ContainerTest
     }
 
     @Test
-    public void cannotInstantiateClassesWithMultipleConstructors()
+    public void instantiatesClassWithMultipleConstructorsAndNoArgs()
+    {
+        final MultipleConstructorsDouble object = container.make(MultipleConstructorsDouble.class);
+        assertNotNull(object);
+        assertSame("", object.getValue());
+    }
+
+    @Test
+    public void instantiatesClassWithMultipleConstructorsAndArgs()
+    {
+        final MultipleConstructorsDouble withDeps =
+                container.make(MultipleConstructorsDouble.class, new SimpleDouble());
+        assertNotNull(withDeps);
+        assertSame("SimpleDouble", withDeps.getValue());
+
+        final MultipleConstructorsDouble withScalars = container.make(MultipleConstructorsDouble.class, "s", 1);
+        assertNotNull(withScalars);
+        assertSame("s", withScalars.getValue());
+    }
+
+    @Test
+    public void cannotInstantiateClassWithMultipleConstructorsWithWrongArguments()
     {
         exception.expect(ContainerError.class);
-        exception.expectMessage(
-                "Cannot instantiate "  + MultipleConstructorsDouble.class + " with multiple constructors."
-        );
-        container.make(MultipleConstructorsDouble.class);
+        exception.expectMessage(String.format(
+                "%s has no constructor with arguments: %s",
+                MultipleConstructorsDouble.class,
+                int.class + ", " + int.class + ", " + int.class
+        ));
+        container.make(MultipleConstructorsDouble.class, 1, 2, 3);
+    }
+
+    @Test
+    public void cannotInstantiateClassWithMultipleConstructorsWithBoxedArguments()
+    {
+        exception.expect(ContainerError.class);
+        exception.expectMessage(String.format(
+                "%s has no constructor with arguments: %s",
+                MultipleConstructorsDouble.class,
+                String.class + ", " + float.class
+        ));
+        container.make(MultipleConstructorsDouble.class, "something", 0.0F);
     }
 
     @Test
     public void cannotInstantiateClassesWithPartialExplicitArgs()
     {
         exception.expect(ContainerError.class);
-        exception.expectMessage(
-                "Cannot instantiate " + SimpleDependenciesDouble.class + " with partial explicit arguments."
-        );
+        exception.expectMessage(String.format(
+                "%s has no constructor with arguments: %s",
+                SimpleDependenciesDouble.class,
+                SimpleDouble.class
+        ));
         container.make(SimpleDependenciesDouble.class, new SimpleDouble());
     }
 
@@ -160,18 +193,5 @@ public class ContainerTest
         });
         final ClassWithValue object = container.make(ClassWithValue.class, "My Value");
         assertSame("My Value", object.getValue());
-    }
-
-    @Test
-    public void mustUseNonNullClass()
-    {
-        final Service service = new Service(container);
-        final Object object = service.perform(getNonNullClass());
-        assertNotNull(object);
-    }
-
-    private Class<@NonNull ?> getNonNullClass()
-    {
-        return SimpleDouble.class;
     }
 }
