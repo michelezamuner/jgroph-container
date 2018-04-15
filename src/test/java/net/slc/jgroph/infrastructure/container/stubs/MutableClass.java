@@ -1,7 +1,7 @@
-package net.slc.jgroph.infrastructure.container;
+package net.slc.jgroph.infrastructure.container.stubs;
 
 @SuppressWarnings("initialization")
-public class ClassWithValue
+public class MutableClass
 {
     private String value;
 
