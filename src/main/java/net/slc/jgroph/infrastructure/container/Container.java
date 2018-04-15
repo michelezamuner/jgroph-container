@@ -7,7 +7,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 
 public class Container
 {
@@ -70,81 +69,77 @@ public class Container
         return constructor.newInstance(args);
     }
 
+    @SuppressWarnings("unchecked")
     private <T> Constructor<T> getConstructor(final Class<T> type, final Object... args)
     {
+        final Constructor<T>[] constructors = (Constructor<T>[])type.getConstructors();
+
         if (args.length == 0) {
-            return getConstructorWithNoArgs(type);
+            if (constructors.length > 0) {
+                return constructors[0];
+            }
+
+            try {
+                return type.getConstructor();
+            } catch (NoSuchMethodException e) {
+                throw new ContainerError("Cannot instantiate " + type + " with no public constructor.", e);
+            }
         }
 
-        return getConstructorProvidedArgs(type, args);
+        for (final Constructor<T> constructor : constructors) {
+            final Class<T>[] types = (Class<T>[])constructor.getParameterTypes();
+            if (types.length != args.length) {
+                continue;
+            }
+
+            boolean allArgsMatching = true;
+            for (int i = 0; i < types.length; i++) {
+                if (!getBoxedType(types[i]).isInstance(args[i])) {
+                    allArgsMatching = false;
+                    break;
+                }
+            }
+            if (allArgsMatching) {
+                return constructor;
+            }
+        }
+
+        final String message = String.format(
+                "%s has no constructor with arguments: %s",
+                type,
+                String.join(", ", Arrays.stream(args)
+                        .map(arg -> arg.getClass())
+                        .map(Object::toString)
+                        .toArray(String[]::new))
+        );
+        throw new ContainerError(message);
     }
 
-    @SuppressWarnings("unchecked")
-    private <T> Constructor<T> getConstructorWithNoArgs(final Class<T> type)
+    private Class<?> getBoxedType(final Class<?> type)
     {
-        final Constructor<?>[] constructors = type.getConstructors();
-
-        if (constructors.length == 1) {
-            return (Constructor<T>)constructors[0];
+        if (type.equals(boolean.class)) {
+            return Boolean.class;
         }
-
-        return getDefaultConstructor(type)
-                .orElseThrow(() -> new ContainerError("Cannot instantiate " + type + " with no public constructor."));
-    }
-
-    private <T> Optional<Constructor<T>> getDefaultConstructor(final Class<T> type)
-    {
-        try {
-            return Optional.ofNullable(type.getConstructor());
-        } catch (NoSuchMethodException e) {
-            return Optional.empty();
+        if (type.equals(byte.class)) {
+            return Byte.class;
         }
-    }
-
-    private <T> Constructor<T> getConstructorProvidedArgs(
-            final Class<T> type,
-            final Object... args
-    ) {
-        final Class<?>[] types = Arrays.stream(args).map(this::getUnboxedType).toArray(Class[]::new);
-
-        try {
-            return type.getConstructor(types);
-        } catch (NoSuchMethodException e) {
-            final String message = String.format(
-                    "%s has no constructor with arguments: %s",
-                    type,
-                    String.join(", ", Arrays.stream(types).map(Object::toString).toArray(String[]::new))
-            );
-            throw new ContainerError(message, e);
+        if (type.equals(char.class)) {
+            return Character.class;
         }
-    }
-
-    private Class<?> getUnboxedType(final Object obj)
-    {
-        final Class<?> type = obj.getClass();
-        if (type.equals(Boolean.class)) {
-            return boolean.class;
+        if (type.equals(float.class)) {
+            return Float.class;
         }
-        if (type.equals(Byte.class)) {
-            return byte.class;
+        if (type.equals(int.class)) {
+            return Integer.class;
         }
-        if (type.equals(Character.class)) {
-            return char.class;
+        if (type.equals(long.class)) {
+            return Long.class;
         }
-        if (type.equals(Float.class)) {
-            return float.class;
+        if (type.equals(short.class)) {
+            return Short.class;
         }
-        if (type.equals(Integer.class)) {
-            return int.class;
-        }
-        if (type.equals(Long.class)) {
-            return long.class;
-        }
-        if (type.equals(Short.class)) {
-            return short.class;
-        }
-        if (type.equals(Double.class)) {
-            return double.class;
+        if (type.equals(double.class)) {
+            return Double.class;
         }
         return type;
     }

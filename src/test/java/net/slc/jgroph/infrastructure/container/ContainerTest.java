@@ -45,11 +45,11 @@ public class ContainerTest
     }
 
     @Test
-    public void instantiatesClassWithMultipleConstructorsAndNoArgs()
+    public void instantiatesClassWithMultipleConstructorsAndNoArgsUsingFirstConstructorFound()
     {
-        final MultipleConstructorsDouble object = container.make(MultipleConstructorsDouble.class);
-        assertNotNull(object);
-        assertSame("", object.getValue());
+        final MultipleCtorsWithArgs obj = container.make(MultipleCtorsWithArgs.class);
+        assertNotNull(obj);
+        assertSame("first", obj.getValue());
     }
 
     @Test
@@ -66,27 +66,31 @@ public class ContainerTest
     }
 
     @Test
+    public void instantiatesClassWithMultipleConstructorsAndSubclassesArgs()
+    {
+        class Subclassed extends SimpleDouble {
+            @Override
+            public String getValue()
+            {
+                return "subclassed";
+            }
+        }
+        final MultipleConstructorsDouble object =
+                container.make(MultipleConstructorsDouble.class, new Subclassed());
+        assertNotNull(object);
+        assertSame("subclassed", object.getValue());
+    }
+
+    @Test
     public void cannotInstantiateClassWithMultipleConstructorsWithWrongArguments()
     {
         exception.expect(ContainerError.class);
         exception.expectMessage(String.format(
                 "%s has no constructor with arguments: %s",
                 MultipleConstructorsDouble.class,
-                int.class + ", " + int.class + ", " + int.class
+                Integer.class + ", " + Integer.class + ", " + Integer.class
         ));
         container.make(MultipleConstructorsDouble.class, 1, 2, 3);
-    }
-
-    @Test
-    public void cannotInstantiateClassWithMultipleConstructorsWithBoxedArguments()
-    {
-        exception.expect(ContainerError.class);
-        exception.expectMessage(String.format(
-                "%s has no constructor with arguments: %s",
-                MultipleConstructorsDouble.class,
-                String.class + ", " + float.class
-        ));
-        container.make(MultipleConstructorsDouble.class, "something", 0.0F);
     }
 
     @Test
