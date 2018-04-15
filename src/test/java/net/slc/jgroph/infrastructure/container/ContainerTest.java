@@ -45,15 +45,7 @@ public class ContainerTest
     }
 
     @Test
-    public void instantiatesClassWithMultipleConstructorsAndNoArgsUsingNoArgsConstructor()
-    {
-        final MultipleConstructorsDouble object = container.make(MultipleConstructorsDouble.class);
-        assertNotNull(object);
-        assertSame("", object.getValue());
-    }
-
-    @Test
-    public void instantiatesClassWithMultipleConstructorsAndNoArgsUsingFirstConstructorWithArgsFound()
+    public void instantiatesClassWithMultipleConstructorsAndNoArgsUsingFirstConstructorFound()
     {
         final MultipleCtorsWithArgs obj = container.make(MultipleCtorsWithArgs.class);
         assertNotNull(obj);
