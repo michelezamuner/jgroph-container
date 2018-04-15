@@ -87,7 +87,7 @@ public class Container
         }
 
         for (final Constructor<T> constructor : constructors) {
-            final Class<T>[] types = (Class<T>[])constructor.getParameterTypes();
+            final Class<?>[] types = constructor.getParameterTypes();
             if (types.length != args.length) {
                 continue;
             }

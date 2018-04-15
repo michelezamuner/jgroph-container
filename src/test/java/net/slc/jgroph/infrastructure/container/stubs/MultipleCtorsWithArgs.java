@@ -1,15 +1,15 @@
-package net.slc.jgroph.infrastructure.container;
+package net.slc.jgroph.infrastructure.container.stubs;
 
 public class MultipleCtorsWithArgs
 {
     private String value;
 
-    public MultipleCtorsWithArgs(final SimpleDouble arg)
+    public MultipleCtorsWithArgs(final Simple arg)
     {
         value = "first";
     }
 
-    public MultipleCtorsWithArgs(final SimpleDouble first, final SimpleDouble second)
+    public MultipleCtorsWithArgs(final Simple first, final Simple second)
     {
         value = "second";
     }

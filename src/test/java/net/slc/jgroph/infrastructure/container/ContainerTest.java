@@ -1,5 +1,6 @@
 package net.slc.jgroph.infrastructure.container;
 
+import net.slc.jgroph.infrastructure.container.stubs.*;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -23,25 +24,25 @@ public class ContainerTest
     @Test
     public void instantiatesClassWithNoDependencies()
     {
-        final SimpleDouble object = container.make(SimpleDouble.class);
-        assertNotNull(object);
+        final Simple obj = container.make(Simple.class);
+        assertNotNull(obj);
+        assertSame("Simple", obj.getValue());
     }
 
     @Test
     public void instantiatesClassWithPublicDefaultConstructor()
     {
-        final DefaultConstructorPublicDouble object = container.make(DefaultConstructorPublicDouble.class);
-        assertNotNull(object);
+        final PublicDefaultCtor obj = container.make(PublicDefaultCtor.class);
+        assertNotNull(obj);
     }
 
     @Test
     public void cannotInstantiateClassWithNonPublicDefaultConstructor()
     {
+        class DefCtor {}
         exception.expect(ContainerError.class);
-        exception.expectMessage(
-                "Cannot instantiate " + DefaultConstructorDouble.class + " with no public constructor."
-        );
-        container.make(DefaultConstructorDouble.class);
+        exception.expectMessage("Cannot instantiate " + DefCtor.class + " with no public constructor.");
+        container.make(DefCtor.class);
     }
 
     @Test
@@ -55,12 +56,11 @@ public class ContainerTest
     @Test
     public void instantiatesClassWithMultipleConstructorsAndArgs()
     {
-        final MultipleConstructorsDouble withDeps =
-                container.make(MultipleConstructorsDouble.class, new SimpleDouble());
+        final MultipleCtors withDeps = container.make(MultipleCtors.class, new Simple());
         assertNotNull(withDeps);
-        assertSame("SimpleDouble", withDeps.getValue());
+        assertSame("Simple", withDeps.getValue());
 
-        final MultipleConstructorsDouble withScalars = container.make(MultipleConstructorsDouble.class, "s", 1);
+        final MultipleCtors withScalars = container.make(MultipleCtors.class, "s", 1);
         assertNotNull(withScalars);
         assertSame("s", withScalars.getValue());
     }
@@ -68,17 +68,35 @@ public class ContainerTest
     @Test
     public void instantiatesClassWithMultipleConstructorsAndSubclassesArgs()
     {
-        class Subclassed extends SimpleDouble {
+        class Subclassed extends Simple {
             @Override
             public String getValue()
             {
                 return "subclassed";
             }
         }
-        final MultipleConstructorsDouble object =
-                container.make(MultipleConstructorsDouble.class, new Subclassed());
-        assertNotNull(object);
-        assertSame("subclassed", object.getValue());
+
+        final MultipleCtors obj = container.make(MultipleCtors.class, new Subclassed());
+        assertNotNull(obj);
+        assertSame("subclassed", obj.getValue());
+    }
+
+    @Test
+    public void cannotInstantiateInnerClassesWithArgs()
+    {
+        class WithDep
+        {
+            public WithDep(final StubInterface i) {}
+        }
+
+        exception.expect(ContainerError.class);
+        exception.expectMessage(String.format(
+                "%s has no constructor with arguments: %s",
+                WithDep.class,
+                ContainerTest.class + "$1"
+        ));
+
+        container.make(WithDep.class, new StubInterface() {});
     }
 
     @Test
@@ -87,10 +105,10 @@ public class ContainerTest
         exception.expect(ContainerError.class);
         exception.expectMessage(String.format(
                 "%s has no constructor with arguments: %s",
-                MultipleConstructorsDouble.class,
+                MultipleCtors.class,
                 Integer.class + ", " + Integer.class + ", " + Integer.class
         ));
-        container.make(MultipleConstructorsDouble.class, 1, 2, 3);
+        container.make(MultipleCtors.class, 1, 2, 3);
     }
 
     @Test
@@ -99,103 +117,99 @@ public class ContainerTest
         exception.expect(ContainerError.class);
         exception.expectMessage(String.format(
                 "%s has no constructor with arguments: %s",
-                SimpleDependenciesDouble.class,
-                SimpleDouble.class
+                SimpleDeps.class,
+                Simple.class
         ));
-        container.make(SimpleDependenciesDouble.class, new SimpleDouble());
+        container.make(SimpleDeps.class, new Simple());
     }
 
     @Test
     public void instantiatesClassWithSimpleDependenciesWithExplicitArgs()
     {
-        final SimpleDouble d1 = new SimpleDouble();
-        final SimpleDouble d2 = new SimpleDouble();
+        final Simple d1 = new Simple();
+        final Simple d2 = new Simple();
 
-        final SimpleDependenciesDouble object = container.make(SimpleDependenciesDouble.class, d1, d2);
+        final SimpleDeps obj = container.make(SimpleDeps.class, d1, d2);
 
-        assertSame(d1, object.getD1());
-        assertSame(d2, object.getD2());
+        assertSame(d1, obj.getD1());
+        assertSame(d2, obj.getD2());
     }
 
     @Test
     public void instantiatesClassWithSimpleDependenciesWithImplicitArgs()
     {
-        final SimpleDependenciesDouble object = container.make(SimpleDependenciesDouble.class);
-        assertEquals("SimpleDouble", object.getD1().getValue());
-        assertEquals("SimpleDouble", object.getD2().getValue());
+        final SimpleDeps obj = container.make(SimpleDeps.class);
+        assertEquals("Simple", obj.getD1().getValue());
+        assertEquals("Simple", obj.getD2().getValue());
     }
 
     @Test
     public void instantiatesClassWithComplexDependenciesWithExplicitArgs()
     {
-        final SimpleDouble d11 = new SimpleDouble();
-        final SimpleDouble d12 = new SimpleDouble();
-        final SimpleDouble d2 = new SimpleDouble();
+        final Simple d11 = new Simple();
+        final Simple d12 = new Simple();
+        final Simple d2 = new Simple();
 
-        final ComplexDependenciesDouble object = container.make(
-                ComplexDependenciesDouble.class,
-                new SimpleDependenciesDouble(d11, d12),
-                d2
-        );
+        final ComplexDeps obj = container.make(ComplexDeps.class, new SimpleDeps(d11, d12), d2);
 
-        assertSame(d11, object.getD1().getD1());
-        assertSame(d12, object.getD1().getD2());
-        assertSame(d2, object.getD2());
+        assertSame(d11, obj.getD1().getD1());
+        assertSame(d12, obj.getD1().getD2());
+        assertSame(d2, obj.getD2());
     }
 
     @Test
     public void instantiatesClassWithComplexDependenciesWithImplicitArgs()
     {
-        final ComplexDependenciesDouble object = container.make(ComplexDependenciesDouble.class);
-        assertEquals("SimpleDouble", object.getD1().getD1().getValue());
-        assertEquals("SimpleDouble", object.getD1().getD2().getValue());
-        assertEquals("SimpleDouble", object.getD2().getValue());
+        final ComplexDeps obj = container.make(ComplexDeps.class);
+        assertEquals("Simple", obj.getD1().getD1().getValue());
+        assertEquals("Simple", obj.getD1().getD2().getValue());
+        assertEquals("Simple", obj.getD2().getValue());
     }
 
     @Test
     public void instantiatesClassWithBoundObject()
     {
-        final SimpleDouble bound = new SimpleDouble();
-        container.bind(SimpleDouble.class, bound);
+        final Simple bound = new Simple();
+        container.bind(Simple.class, bound);
 
-        final SimpleDouble object = container.make(SimpleDouble.class);
-        assertSame(bound, object);
+        final Simple obj = container.make(Simple.class);
+        assertSame(bound, obj);
     }
 
     @Test
     public void cannotInstantiateInterfaceIfNoObjectIsBound()
     {
         exception.expect(ContainerError.class);
-        exception.expectMessage("Cannot instantiate " + InterfaceDouble.class + " with no object bound.");
-        container.make(InterfaceDouble.class);
+        exception.expectMessage("Cannot instantiate " + StubInterface.class + " with no object bound.");
+        container.make(StubInterface.class);
     }
 
     @Test
     public void instantiatesInterfaceWithBoundObject()
     {
-        final InterfaceDouble bound = mock(InterfaceDouble.class);
-        container.bind(InterfaceDouble.class, bound);
+        final StubInterface bound = mock(StubInterface.class);
+        container.bind(StubInterface.class, bound);
 
-        final InterfaceDouble object = container.make(InterfaceDouble.class);
-        assertSame(bound, object);
+        final StubInterface obj = container.make(StubInterface.class);
+        assertSame(bound, obj);
     }
 
     @Test
-    public void instantiatingContainerWillAlwaysProduceTheSameObject()
+    public void instantiatingContainerWillAlwaysProduceTheSameContainerObject()
     {
-        final Container object = container.make(Container.class);
-        assertSame(container, object);
+        final Container obj = container.make(Container.class);
+        assertSame(container, obj);
     }
 
     @Test
     public void instantiatesClassFromCallback()
     {
-        container.bind(ClassWithValue.class, (Callback)(Object ...args) -> {
-            final ClassWithValue object = new ClassWithValue();
-            object.setValue((String)args[0]);
-            return object;
+        container.bind(MutableClass.class, (Callback)(Object ...args) -> {
+            final MutableClass obj = new MutableClass();
+            obj.setValue((String)args[0]);
+            return obj;
         });
-        final ClassWithValue object = container.make(ClassWithValue.class, "My Value");
-        assertSame("My Value", object.getValue());
+        final MutableClass obj = container.make(MutableClass.class, "My Value");
+        assertSame("My Value", obj.getValue());
     }
 }
